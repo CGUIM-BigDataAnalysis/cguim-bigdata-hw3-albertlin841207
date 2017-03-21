@@ -2,46 +2,29 @@
 title: "長庚大學 大數據分析方法 作業三"
 output: github_document
 ---
-
-## 作業說明 （繳交時請直接刪除這個章節）
-
-作業目的：練習初級爬蟲，並將爬蟲結果整理成資料框data.frame
-
-依下列指示，完成網站內文分析：
-
-- 爬取指定網站內容
-    - 學號結尾 0,4,8:[Ptt Tech_Job 版](https://www.ptt.cc/bbs/Tech_Job/index.html)
-    - 學號結尾 1,5,9:[Ptt NBA 版](https://www.ptt.cc/bbs/NBA/index.html)
-    - 學號結尾 2,6:[Ptt LoL 版](https://www.ptt.cc/bbs/LoL/index.html)
-    - 學號結尾 3,7:[Ptt movie 版](https://www.ptt.cc/bbs/movie/index.html)
-    
-- 試著爬出**至少100篇**文章（`30pt`）的**標題**、**推文數**與**作者ID**（各`10pt`）
-    - 資料框欄位名稱：
-        - **標題**：Title
-        - **推文數**：PushNum
-        - **作者ID**：Author
-    - 一頁只有20篇，該怎麼辦？
-        - 提示：使用for + rbind()將分批爬取出的資料結合
-        - 範例：dataframeAll<-rbind(dataframe1,dataframe2) 
-        - 參考：[6.6 資料組合](http://yijutseng.github.io/DataScienceRBook/manipulation.html#section-6.6)
-    
-- 將爬取出的資料輸出至Markdown報告中（`10pt`）
-    - 使用knitr::kable(資料框物件)整理輸出
-    
-- 用文字搭配程式碼解釋爬蟲結果 
-    - 共爬出幾篇文章標題？（程式碼與文字解釋各`5pt`）
-        - dim(), nrow(), str()皆可
-    - 哪個作者文章數最多？（程式碼與文字解釋各`5pt`）
-        - table()
-    - 其他爬蟲結果解釋（`10pt`）
-        - 試著找出有趣的現象，不一定要用程式碼搭配解釋，也可只用文字
-
-    
-
 ## 網站資料爬取
 ```{r}
 #這是R Code Chunk
-library(rvest) ##第一次使用要先安裝 install.packages("rvest")
+##第一次使用要先安裝 install.packages("rvest")
+
+#install.packages("rvest")
+library(rvest)
+
+for(i in 1:5){
+  PttUrl <- paste0("https://www.ptt.cc/bbs/Tech_Job/index",i,".html")
+  PttTechJob <- PttUrl
+
+  PttContent <- read_html(PttTechJob)
+  post_title <- PttContent %>% html_nodes(".title") %>% html_text()
+  post_pushnum <- PttContent %>% html_nodes(".nrec") %>% html_text()
+  post_author <- PttContent %>% html_nodes(".author") %>% html_text()
+  
+  assign(paste0("PttPosts",i), data.frame(Title = post_title, PushNum = post_pushnum, Author = post_author))
+}
+
+  PttPostsAll<-rbind(PttPosts1,PttPosts2,PttPosts3,PttPosts4,PttPosts5)
+  tail(PttPostsAll)
+
 ##read_html
 ##html_nodes
 ##html_text
@@ -50,20 +33,25 @@ library(rvest) ##第一次使用要先安裝 install.packages("rvest")
 ## 爬蟲結果呈現
 ```{r}
 #這是R Code Chunk
-knitr::kable(iris) ##請將iris取代為上個步驟中產生的爬蟲資料資料框
+knitr::kable(PttPostsAll[1:100,c("Title","PushNum","Author")])
+
+##請將iris取代為上個步驟中產生的爬蟲資料資料框
 ```
 
 ## 解釋爬蟲結果 
 ```{r}
 #這是R Code Chunk
+str(PttPostsAll)
 ```
 
-解釋解釋解釋解釋
+100 obs.代表有100列，也就是有100篇文章標題。
 
 ```{r}
 #這是R Code Chunk
+table(PttPostsAll$Author)
 ```
 
-解釋解釋解釋解釋
+作者longbow2的文章數最多，100篇裡他發了17個文章。
 
-人工結論與解釋解釋解釋解釋解釋解釋解釋
+我發現的有趣現象是，裡面有非常多的人詢問和分享面試的心得，但通常這種文章的推文數都很低，反而是一些危言聳聽的標題，例如：[問題] 當找不到工作時，會不會有一種想輕生的 …，或是，Re: [轉錄][就可] 嫁給工程師的好處多?! ^_^，之類的標題就會有很多推文，甚至有「爆」的推文數。
+然後發現上面說的longbow2的文章標題都會有個[公告]，原來他是小組長，他正在舉行版主的投票，所以他的文章數特別多。
